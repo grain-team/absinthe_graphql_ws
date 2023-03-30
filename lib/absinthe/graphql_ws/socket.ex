@@ -185,7 +185,10 @@ defmodule Absinthe.GraphqlWS.Socket do
   """
   @callback handle_init(payload :: map(), socket()) :: Socket.init()
 
-  @optional_callbacks handle_message: 2, handle_init: 2
+  @callback handle_subscribe(topic :: String.t(), socket()) :: any
+  @callback handle_unsubscribe(topic :: String.t(), socket()) :: any
+
+  @optional_callbacks handle_message: 2, handle_init: 2, handle_subscribe: 2, handle_unsubscribe: 2
 
   @spec __after_compile__(any(), any()) :: :ok
   def __after_compile__(env, _bytecode) do
