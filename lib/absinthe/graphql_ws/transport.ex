@@ -157,8 +157,13 @@ defmodule Absinthe.GraphqlWS.Transport do
         debug("unsubscribing from topic #{topic}")
         Phoenix.PubSub.unsubscribe(socket.pubsub, topic)
         Absinthe.Subscription.unsubscribe(socket.endpoint, topic)
+        socket = %{socket | subscriptions: Map.delete(socket.subscriptions, topic)}
 
-        {:ok, %{socket | subscriptions: Map.delete(socket.subscriptions, topic)}}
+        if function_exported?(socket.handler, :handle_unsubscribe, 2) do
+          socket.handler.handle_unsubscribe(topic, socket)
+        end
+
+        {:ok, socket}
 
       _ ->
         {:ok, socket}
@@ -226,8 +231,15 @@ defmodule Absinthe.GraphqlWS.Transport do
             link: true
           )
 
-        socket = merge_opts(socket, context: context)
-        {:ok, %{socket | subscriptions: Map.put(socket.subscriptions, topic, id)}}
+        socket =
+          %{socket | subscriptions: Map.put(socket.subscriptions, topic, id)}
+          |> merge_opts(context: context)
+
+        if function_exported?(socket.handler, :handle_subscribe, 2) do
+          socket.handler.handle_subscribe(topic, socket)
+        end
+
+        {:ok, socket}
 
       {:ok, %{data: _} = reply, context} ->
         queue_complete_message(id)
